@@ -1,4 +1,4 @@
-(function() {
+(function () {
 
   'use strict';
 
@@ -18,6 +18,9 @@
 
   // We have to create a new todo document and enter it in the database
   function addTodo(text) {
+
+    if(text.length===0) return;
+
     var todo = {
       _id: new Date().toISOString(),
       title: text,
@@ -32,7 +35,7 @@
     // });
 
     // Or promises
-    return new Promise((resolve,reject)=>{
+    return new Promise((resolve, reject) => {
       resolve(db.put(todo));
 
       reject(error);
@@ -43,7 +46,7 @@
   async function showTodos() {
 
     try {
-      const docs = await db.allDocs({include_docs: true, descending: true});
+      const docs = await db.allDocs({ include_docs: true, descending: true });
 
       await redrawTodosUI(docs.rows);
 
@@ -53,15 +56,28 @@
   }
 
   function checkboxChanged(todo, event) {
+    console.log(todo);
+    console.log(event.target.checked);
+    todo.completed = event.target.checked;
+    db.put(todo);
   }
 
   // User pressed the delete button for a todo, delete it
   function deleteButtonPressed(todo) {
+    db.remove(todo);
   }
 
   // The input box when editing a todo has blurred, we should save
   // the new title or delete the todo if the title is empty
   function todoBlurred(todo, event) {
+    var trimmedText = event.target.value.trim();
+
+    if (!trimmedText) {
+      db.remove(todo);
+    } else {
+      todo.title = trimmedText;
+      db.put(todo);
+    }
   }
 
   // Initialise a sync with the remote server
@@ -101,12 +117,12 @@
     checkbox.addEventListener('change', checkboxChanged.bind(this, todo));
 
     var label = document.createElement('label');
-    label.appendChild( document.createTextNode(todo.title));
+    label.appendChild(document.createTextNode(todo.title));
     label.addEventListener('dblclick', todoDblClicked.bind(this, todo));
 
     var deleteLink = document.createElement('button');
     deleteLink.className = 'destroy';
-    deleteLink.addEventListener( 'click', deleteButtonPressed.bind(this, todo));
+    deleteLink.addEventListener('click', deleteButtonPressed.bind(this, todo));
 
     var divDisplay = document.createElement('div');
     divDisplay.className = 'view';
@@ -137,12 +153,12 @@
   async function redrawTodosUI(todos) {
     var ul = document.getElementById('todo-list');
     ul.innerHTML = '';
-    todos.forEach(function(todo) {
+    todos.forEach(function (todo) {
       ul.appendChild(createTodoListItem(todo.doc));
     });
   }
 
-  function newTodoKeyPressHandler( event ) {
+  function newTodoKeyPressHandler(event) {
     if (event.keyCode === ENTER_KEY) {
       addTodo(newTodoDom.value);
       newTodoDom.value = '';
